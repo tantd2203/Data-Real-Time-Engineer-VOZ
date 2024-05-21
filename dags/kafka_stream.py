@@ -14,7 +14,8 @@ default_args = {
 def get_data():
     import requests
     # deploy cái ml này lên server
-    res = requests.get("http://127.0.0.1:8085/random")
+    #  cái này là ngrok chạy local mỗi lần chạy thì thành 1 lần !
+    res = requests.get("https://2099-14-187-145-229.ngrok-free.app/")
     res = res.json()
     print(res)
     return res

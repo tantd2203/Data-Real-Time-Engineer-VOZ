@@ -9,7 +9,7 @@ def read_excel_file(file_path):
     data = df.to_dict(orient='records')
     return data
 
-@app.route('/random', methods=['GET'])
+@app.route('/', methods=['GET'])
 def get_random_row():
     data = read_excel_file('../data/dataset.xlsx')
     if data:
@@ -19,4 +19,4 @@ def get_random_row():
         return jsonify({"error": "No data found"}), 404
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8085)
+    app.run(debug=True)
