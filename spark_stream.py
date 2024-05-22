@@ -1,10 +1,12 @@
 import logging
-
+import uuid
 from cassandra.cluster import Cluster
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import from_json, col
 from pyspark.sql.types import StructType, StructField, StringType
 
+topic_name = 'voz'
+kafka_server = 'localhost:9092'
 
 def create_keyspace(session):
     session.execute("""
@@ -19,27 +21,24 @@ def create_table(session):
     session.execute("""
     CREATE TABLE IF NOT EXISTS spark_streams.comments (
         id UUID PRIMARY KEY,
-        sentence TEXT);
+        sentence TEXT
+    );
     """)
+    logging.info("Table created successfully with UUID as primary key!")
 
     print("Table created successfully!")
 
 
 def insert_data(session, **kwargs):
-    print("inserting data...")
-
-    id = kwargs.get('id')
     sentence = kwargs.get('sentence')
-
     try:
         session.execute("""
-            INSERT INTO spark_streams.created_users(id,sentence )
-                VALUES (%s, %s)
-        """, (id, sentence))
-        logging.info(f"Data inserted for {sentence} ")
-
+            INSERT INTO spark_streams.comments (id, sentence)
+            VALUES (%s, %s)
+        """, (uuid.uuid4(), sentence))
+        logging.info(f"Data inserted for sentence: {sentence}")
     except Exception as e:
-        logging.error(f'could not insert data due to {e}')
+        logging.error(f'Could not insert data due to {e}')
 
 
 def create_spark_connection():
@@ -66,8 +65,8 @@ def connect_to_kafka(spark_conn):
     try:
         spark_df = spark_conn.readStream \
             .format('kafka') \
-            .option('kafka.bootstrap.servers', 'localhost:9092') \
-            .option('subscribe', 'voz') \
+            .option('kafka.bootstrap.servers', kafka_server) \
+            .option('subscribe', topic_name) \
             .option('startingOffsets', 'earliest') \
             .load()
         logging.info("kafka dataframe created successfully")
@@ -90,18 +89,25 @@ def create_cassandra_connection():
         return None
 
 
+
 def create_selection_df_from_kafka(spark_df):
-    schema = StructType([
-        StructField("id", StringType(), False),
-        StructField("sentence", StringType(), False)
-    ])
+    if spark_df is None:
+        logging.error("Input DataFrame is None, cannot proceed with transformation.")
+        return None
 
-    sel = spark_df.selectExpr("CAST(value AS STRING)") \
-        .select(from_json(col('value'), schema).alias('data')).select("data.*")
-    print(sel)
+    try:
+        schema = StructType([
+            StructField("sentence", StringType(), False)
+        ])
 
-    return sel
-
+        sel = spark_df.selectExpr("CAST(value AS STRING)") \
+            .select(from_json(col('value'), schema).alias('data')).select("data.*")
+        logging.info("Transformation to selection DataFrame successful.")
+        print(sel)
+        return sel
+    except Exception as e:
+        logging.error(f"Error in transforming Kafka DataFrame: {e}")
+        return None
 
 if __name__ == "__main__":
     # create spark connection
@@ -122,7 +128,9 @@ if __name__ == "__main__":
             streaming_query = (selection_df.writeStream.format("org.apache.spark.sql.cassandra")
                                .option('checkpointLocation', '/tmp/checkpoint')
                                .option('keyspace', 'spark_streams')
-                               .option('table', 'created_users')
+                               .option('table', 'comments')
                                .start())
 
             streaming_query.awaitTermination()
+
+#  create success database
