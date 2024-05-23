@@ -1,5 +1,6 @@
 import re
 from datetime import datetime
+from time import sleep
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
@@ -39,8 +40,6 @@ def stream_data():
     import time
     import logging
 
-    # producer = KafkaProducer(bootstrap_servers=["broker:29092"], max_block_ms=5000)
-    # run without airflow
     producer = KafkaProducer(bootstrap_servers=["localhost:9092"], max_block_ms=5000)
     curr_time = time.time()
 
@@ -52,16 +51,18 @@ def stream_data():
             res = format_data(res)
 
             producer.send(topic_name, json.dumps(res).encode('utf-8'))
+            sleep(5)
         except Exception as e:
             logging.error(f'An error occured: {e}')
             continue
 
+
 stream_data()
-with DAG('UIT-BIGDATA',
-         default_args=default_args,
-         schedule_interval='@daily',
-         catchup=False) as dag:
-    streaming_task = PythonOperator(
-        task_id='stream_data_from_api',
-        python_callable=stream_data
-    )
+# with DAG('UIT-BIGDATA',
+#          default_args=default_args,
+#          schedule_interval='@daily',
+#          catchup=False) as dag:
+#     streaming_task = PythonOperator(
+#         task_id='stream_data_from_api',
+#         python_callable=stream_data
+#     )
