@@ -17,7 +17,7 @@ def get_data():
     import requests
     # deploy cái ml này lên server
     #  cái này là ngrok chạy local mỗi lần chạy thì thành 1 lần !
-    res = requests.get("http://127.0.0.1:5000/")
+    res = requests.get("https://4aed-171-232-87-13.ngrok-free.app/")
     res = res.json()
     print(res)
     return res
