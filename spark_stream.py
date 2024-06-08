@@ -33,7 +33,7 @@ def connect_to_kafka(spark_conn):
         spark_df = spark_conn \
             .readStream \
             .format("kafka") \
-            .option("kafka.bootstrap.servers", "localhost:9092")\
+            .option("kafka.bootstrap.servers", "localhost:9092") \
             .option("subscribe", "voz") \
             .option("startingOffsets", "earliest") \
             .load()
@@ -61,5 +61,5 @@ if __name__ == "__main__":
     spark_conn = create_spark_connection()
 
     if spark_conn is not None:
-         # connect to kafka with spark connection
+        # connect to kafka with spark connection
         spark_df = connect_to_kafka(spark_conn)
