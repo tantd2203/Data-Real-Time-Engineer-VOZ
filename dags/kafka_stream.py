@@ -1,9 +1,9 @@
 import re
 from datetime import datetime
 from time import sleep
-
-from airflow import DAG
-from airflow.operators.python import PythonOperator
+#
+# from airflow import DAG
+# from airflow.operators.python import PythonOperator
 
 topic_name = 'voz'
 
@@ -17,7 +17,7 @@ def get_data():
     import requests
     # deploy cái ml này lên server
     #  cái này là ngrok chạy local mỗi lần chạy thì thành 1 lần !
-    res = requests.get("https://4aed-171-232-87-13.ngrok-free.app/")
+    res = requests.get("http://127.0.0.1:5000")
     res = res.json()
     print(res)
     return res
@@ -44,7 +44,7 @@ def stream_data():
     curr_time = time.time()
 
     while True:
-        if time.time() > curr_time + 1000:  # 1 minute
+        if time.time() > curr_time + 100:  # 1 minute
             break
         try:
             res = get_data()
